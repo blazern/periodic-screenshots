@@ -1,0 +1,38 @@
+version: "3"
+services:
+  python_script:
+    build:
+      context: ./script
+      args:
+        - OUT_FOLDER=/out_folder
+        - PERIOD_SECONDS=${PERIOD_SECONDS:?period of screenshots must be set}
+        - WINDOW_WIDTH=${WINDOW_WIDTH:?selenium window width must be set}
+        - WINDOW_HEIGHT=${WINDOW_HEIGHT:?selenium window height must be set}
+        - REMOTE_SELENIUM_WEBDRIVER_ADDRESS=http://selenium:4444/wd/hub
+        - URLS_CONFIG=/urls_config.yaml
+    networks:
+      - internal-network
+    volumes:
+      - ${OUT_FOLDER:?out folder for screenshots must be set}:/out_folder
+      - ${URLS_CONFIG:?path to urls config must be set}:/urls_config.yaml
+    depends_on:
+      - selenium
+    restart: always
+
+  selenium:
+    image: selenium/standalone-chrome:4.0.0-alpha-7-prerelease-20201009
+    networks:
+      - internal-network
+      - external-network
+    expose:
+      - 4444
+    volumes:
+      - /dev/shm:/dev/shm
+    restart: always
+
+networks:
+  internal-network:
+    driver: bridge
+    internal: true
+  external-network:
+    driver: bridge

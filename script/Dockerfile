@@ -1,0 +1,37 @@
+FROM python:3.6.12-alpine3.12
+
+ADD ./* /
+
+RUN pip install -r /requirements.txt
+
+# Declare params
+ARG OUT_FOLDER
+ARG PERIOD_SECONDS
+ARG WINDOW_WIDTH
+ARG WINDOW_HEIGHT
+ARG REMOTE_SELENIUM_WEBDRIVER_ADDRESS
+ARG URLS_CONFIG
+
+# Test that all declared args are provided
+RUN test $OUT_FOLDER \
+ && test $PERIOD_SECONDS \
+ && test $WINDOW_WIDTH \
+ && test $WINDOW_HEIGHT \
+ && test $REMOTE_SELENIUM_WEBDRIVER_ADDRESS \
+ && test $URLS_CONFIG
+
+# Declare env vars used in CMD
+ENV OUT_FOLDER $OUT_FOLDER
+ENV PERIOD_SECONDS $PERIOD_SECONDS
+ENV WINDOW_WIDTH $WINDOW_WIDTH
+ENV WINDOW_HEIGHT $WINDOW_HEIGHT
+ENV REMOTE_SELENIUM_WEBDRIVER_ADDRESS $REMOTE_SELENIUM_WEBDRIVER_ADDRESS
+ENV URLS_CONFIG $URLS_CONFIG
+
+CMD python /main.py \
+  --out-folder $OUT_FOLDER \
+  --period-seconds=$PERIOD_SECONDS \
+  --window-width=$WINDOW_WIDTH \
+  --window-height=$WINDOW_HEIGHT \
+  --remote-selenium-webdriver-address="$REMOTE_SELENIUM_WEBDRIVER_ADDRESS" \
+  --urls-config=$URLS_CONFIG
