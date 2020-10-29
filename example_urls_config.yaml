@@ -1,0 +1,5 @@
+urls:
+  - name: name1
+    url: http://somesite.ru
+  - name: name2
+    url: http://anothersite.ru
