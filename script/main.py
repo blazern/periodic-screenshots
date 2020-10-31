@@ -1,6 +1,7 @@
 import argparse
-import sys
+import logging
 import os
+import sys
 import time
 import yaml
 
@@ -13,6 +14,8 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 def main(argv):
+  logging.getLogger().setLevel(logging.INFO)
+
   parser = argparse.ArgumentParser(
     description='Periodically takes screenshots of given URLs using Selenium')
   parser.add_argument('--out-folder', required=True,
@@ -39,13 +42,17 @@ def main(argv):
 
   urls_dict = parse_urls_config(options.urls_config)
   if not urls_dict:
-    sys.stderr.write('URLs config must not be empty\n')
+    logging.error('URLs config must not be empty, but it is. Path: {}'
+      .format(options.urls_config))
     return 1
 
-  for url_name in urls_dict.keys():
+  for url_name, url in urls_dict.items():
     path = os.path.join(options.out_folder, url_name)
-    if not os.path.exists(path):
+    if os.path.exists(path):
+      logging.info('Found folder {} for url {}'.format(path, url))
+    else:
       os.makedirs(path)
+      logging.info('Created folder {} for url {}'.format(path, url))
 
   driver_options = webdriver.ChromeOptions()
   driver_options.add_argument('window-size={},{}'.format(
@@ -56,6 +63,8 @@ def main(argv):
     now = datetime.now()
     sleep_time = (next_screenshot_time-now).total_seconds()
     if sleep_time > 0:
+      logging.info('Now: ({}), next screenshots time: ({}), sleeping for {} seconds'
+        .format(now, next_screenshot_time, sleep_time))
       time.sleep(sleep_time)
 
     with webdriver.Remote(
@@ -64,11 +73,15 @@ def main(argv):
             options=driver_options) as driver:
 
       for url_name, url in urls_dict.items():
-        name = '{}.png'.format(next_screenshot_time.strftime(options.datetime_format))
+        now = datetime.now()
+        name = '{}.png'.format(now.strftime(options.datetime_format))
         path = os.path.join(options.out_folder, url_name, name)
 
+        logging.info('Opening url "{}" with value {}'.format(url_name, url))
         driver.get(url)
+        logging.info('Taking screenshot of url "{}" with value {}'.format(url_name, url))
         driver.get_screenshot_as_file(path)
+        logging.info('Saving screenshot to {}'.format(path))
 
 
 def parse_urls_config(path):
