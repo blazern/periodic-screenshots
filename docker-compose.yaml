@@ -24,8 +24,6 @@ services:
     networks:
       - internal-network
       - external-network
-    expose:
-      - 4444
     volumes:
       - /dev/shm:/dev/shm
     restart: always
