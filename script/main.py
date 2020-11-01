@@ -38,6 +38,8 @@ def main(argv):
   parser.add_argument('--remote-selenium-webdriver-address', required=True)
   parser.add_argument('--datetime-format', default='%Y_%m_%d__%H_%M_%S',
                       help='Format which will be used to name created screenshots')
+  parser.add_argument('--wait-for-url-load-seconds', type=int, default=10,
+                      help='How many seconds to wait for url to get loaded before taking a screenshot')
   options = parser.parse_args()
 
   urls_dict = parse_urls_config(options.urls_config)
@@ -67,6 +69,7 @@ def main(argv):
         .format(now, next_screenshot_time, sleep_time))
       time.sleep(sleep_time)
 
+    logging.info('Connecting to remote Selenium')
     with webdriver.Remote(
             command_executor=options.remote_selenium_webdriver_address,
             desired_capabilities=DesiredCapabilities.CHROME,
@@ -79,6 +82,9 @@ def main(argv):
 
         logging.info('Opening url "{}" with value {}'.format(url_name, url))
         driver.get(url)
+        logging.info('Waiting {} seconds for url "{}" with value {} to load'
+          .format(options.wait_for_url_load_seconds, url_name, url))
+        time.sleep(options.wait_for_url_load_seconds)
         logging.info('Taking screenshot of url "{}" with value {}'.format(url_name, url))
         driver.get_screenshot_as_file(path)
         logging.info('Saving screenshot to {}'.format(path))
