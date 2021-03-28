@@ -27,6 +27,9 @@ def main(argv):
                            + 'screenshot will be taken at the start next such a peiod. '
                            + 'For example, if you specify "3600" (1 hour) and current time is '
                            + '13:45, the first screenshot will be taken in 15 minutes at 14:00.')
+  parser.add_argument('--skipped-periods', help='List of time periods which should be skipped. '
+                           + 'Next format is supported: "13:15,10 18:03,20", where '
+                           + '13:15 is time period start and 10 is how many minutes should be skipped.')
   parser.add_argument('--urls-config', required=True, help='YAML config with URLs. See the '
                            + '"example_urls_format.yaml" file to understand expected format. '
                            + 'Name of each of the "urls" array entries is used to create a subfolder '
@@ -56,12 +59,23 @@ def main(argv):
       os.makedirs(path)
       logging.info('Created folder {} for url {}'.format(path, url))
 
+  skipped_periods_str = None
+  if options.skipped_periods:
+    periods = periods_arg_to_periods(options.skipped_periods)
+    skipped_periods_str = map(
+        lambda p: '{}-{}'.format(p[0].strftime('%H:%M'), p[1].strftime('%H:%M')),
+        periods)
+    skipped_periods_str = ' '.join(skipped_periods_str)
+  logging.info('Skipped periods: {}'.format(skipped_periods_str))
+
   driver_options = webdriver.ChromeOptions()
   driver_options.add_argument('window-size={},{}'.format(
     options.window_width, options.window_height))
 
   while True:
-    next_screenshot_time = calculate_next_screenshot_time(options.period_seconds)
+    next_screenshot_time = calculate_next_screenshot_time(
+      options.period_seconds,
+      options.skipped_periods)
     now = datetime.now()
     sleep_time = (next_screenshot_time-now).total_seconds()
     if sleep_time > 0:
@@ -100,14 +114,42 @@ def parse_urls_config(path):
   return result
 
 
-def calculate_next_screenshot_time(period_seconds):
+def calculate_next_screenshot_time(period_seconds, skipped_periods_arg):
   now = datetime.now()
-  today = date.today()
-  next_possible_result = datetime.combine(today, datetime.min.time())
-  while next_possible_result < now:
+  next_possible_result = datetime.combine(date.today(), datetime.min.time())
+  while (next_possible_result < now
+         or should_time_be_skipped(next_possible_result, skipped_periods_arg)):
     next_possible_result = next_possible_result + timedelta(seconds=period_seconds)
   return next_possible_result
 
+
+def should_time_be_skipped(time, skipped_periods_arg):
+  if not skipped_periods_arg:
+    return False
+
+  periods = periods_arg_to_periods(skipped_periods_arg)
+
+  for period in periods:
+    if period[0] <= time and time <= period[1]:
+      logging.info('Time ({}) is skipped due to provided skipped peiod {}-{}'
+        .format(time, period[0].strftime('%H:%M'), period[1].strftime('%H:%M')))
+      return True
+
+  return False
+
+
+def periods_arg_to_periods(periods_strs):
+  periods_strs = periods_strs.split(' ')
+  def period_str_to_period(period_str):
+    (time, duration) = period_str.split(',')
+    today_str = date.today().strftime('%d.%m.%Y')
+    period_start = datetime.strptime(
+      '{} {}'.format(today_str, time),
+      '%d.%m.%Y %H:%M')
+    period_end = period_start + timedelta(minutes=int(duration))
+    return (period_start, period_end)
+  periods = list(map(period_str_to_period, periods_strs))
+  return periods
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

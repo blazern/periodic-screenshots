@@ -6,6 +6,7 @@ services:
       args:
         - OUT_FOLDER=/out_folder
         - PERIOD_SECONDS=${PERIOD_SECONDS:?period of screenshots must be set}
+        - SKIPPED_PERIODS=${SKIPPED_PERIODS?skipped time periods can be set (it can be empty)}
         - WINDOW_WIDTH=${WINDOW_WIDTH:?selenium window width must be set}
         - WINDOW_HEIGHT=${WINDOW_HEIGHT:?selenium window height must be set}
         - REMOTE_SELENIUM_WEBDRIVER_ADDRESS=http://selenium:4444/wd/hub
