@@ -96,6 +96,15 @@ def main(argv):
 
         logging.info('Opening url "{}" with value {}'.format(url_name, url))
         driver.get(url)
+        
+        # TODO: that's a terrible hack, instead you should allow to write custom scripts for urls and dynamically import them
+        if 'google' in url_name:
+          time.sleep(5)
+          from selenium.webdriver.common.action_chains import ActionChains
+          elem = driver.find_element_by_xpath("//*[text()='Ik ga akkoord']")
+          ac = ActionChains(driver)
+          ac.move_to_element(elem).click().perform()
+
         logging.info('Waiting {} seconds for url "{}" with value {} to load'
           .format(options.wait_for_url_load_seconds, url_name, url))
         time.sleep(options.wait_for_url_load_seconds)
